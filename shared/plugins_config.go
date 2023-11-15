@@ -27,10 +27,10 @@ func PluginHandshakeConfig() plugin.HandshakeConfig {
 	return handshake
 }
 
-func PluginMapClientConfig() map[string]plugin.Plugin {
+func PluginMapClientConfig(pluginInstance plugin.Plugin) map[string]plugin.Plugin {
 	// map of plugins we can dispense.
 	var pluginMap = map[string]plugin.Plugin{
-		PluginID: &KVGRPCPlugin{},
+		PluginID: pluginInstance,
 	}
 
 	return pluginMap

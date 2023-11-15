@@ -14,10 +14,22 @@ import (
 
 // Here is a real implementation of KV that writes to a local file with
 // the key name and the contents are the value of the key.
-type KV struct{}
+type KV struct {
+	brokerID uint32
+}
 
 func NewKV() *KV {
 	return &KV{}
+}
+
+func (k *KV) Ping() error {
+	return nil
+}
+
+func (k *KV) Init(brokerID uint32) error {
+	fmt.Fprintf(os.Stderr, "Plugin: got Init() call.\n")
+	k.brokerID = brokerID
+	return nil
 }
 
 func (k *KV) Put(key string, value []byte) error {

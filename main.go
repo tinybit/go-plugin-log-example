@@ -19,6 +19,14 @@ const (
 	MainProcessLogLabel = "main"
 )
 
+type logHelper struct {
+}
+
+func (l *logHelper) Log(level int, msg string) error {
+	zlog.Info().Msg(msg)
+	return nil
+}
+
 func run() error {
 	logger := configureLogger()
 	logInjector := NewLogInjector(logger)
@@ -27,11 +35,15 @@ func run() error {
 
 	zlog.Info().Msg("Started main process.")
 
+	shared.MainLogHelper = &logHelper{}
+
 	// We're a host. Start by launching the plugin process.
+	pluginInstance := &shared.KVGRPCPlugin{}
+
 	client := plugin.NewClient(&plugin.ClientConfig{
 		Logger:           logInjector,
 		HandshakeConfig:  shared.PluginHandshakeConfig(),
-		Plugins:          shared.PluginMapClientConfig(),
+		Plugins:          shared.PluginMapClientConfig(pluginInstance),
 		Cmd:              exec.Command("sh", "-c", os.Getenv("KV_PLUGIN")),
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 		SyncStderr:       stderrToLogWriter,
@@ -53,6 +65,22 @@ func run() error {
 	// We should have a KV store now! This feels like a normal interface
 	// implementation but is in fact over an RPC connection.
 	kv := raw.(shared.KV)
+
+	// ping first
+	err = kv.Ping()
+	if err != nil {
+		return err
+	}
+
+	// start logger server
+	pluginInstance.ClientPtr.StartLogServer()
+
+	// init plugin
+	err = pluginInstance.ClientPtr.Initialize()
+	if err != nil {
+		return err
+	}
+
 	os.Args = os.Args[1:]
 	switch os.Args[0] {
 	case "get":

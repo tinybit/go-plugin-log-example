@@ -10,10 +10,6 @@ import (
 	"github.com/tinybit/go-plugin-log-example/proto"
 )
 
-type LogHelper interface {
-	Log(level int, msg string) error
-}
-
 // GRPCClient is an implementation of KV that talks over RPC.
 type GRPCLogHelperClient struct{ client proto.LogHelperClient }
 
@@ -33,8 +29,8 @@ func (m *GRPCLogHelperClient) Log(level int, msg string) error {
 
 // Here is the gRPC server that GRPCClient talks to.
 type GRPCLogHelperServer struct {
-	// This is the real implementation
-	Impl LogHelper
+	proto.UnimplementedLogHelperServer
+	Impl LogHelper // This is the real implementation
 }
 
 func (m *GRPCLogHelperServer) Log(ctx context.Context, req *proto.LogRequest) (resp *proto.Empty, err error) {

@@ -1,8 +1,8 @@
 .PHONY: all clean run_put run_get
 
 all:
-	go build -o kv && go build -o kv-go-grpc ./plugin-go-grpc
 	cd proto && make
+	go build -o kv && go build -o kv-go-grpc ./plugin-go-grpc
 
 clean:
 	rm -f kv kv-go-grpc kv_hello

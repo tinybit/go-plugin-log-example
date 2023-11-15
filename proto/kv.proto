@@ -5,6 +5,10 @@ syntax = "proto3";
 package proto;
 option go_package = "./proto";
 
+message Empty {}
+
+// main -> plugin RPC
+
 message GetRequest {
     string key = 1;
 }
@@ -18,9 +22,24 @@ message PutRequest {
     bytes value = 2;
 }
 
-message Empty {}
+message InitRequest {
+    uint32 broker_id = 1;
+}
 
 service KV {
+    rpc Ping(Empty) returns (Empty);
+    rpc Init(InitRequest) returns (Empty);
     rpc Get(GetRequest) returns (GetResponse);
     rpc Put(PutRequest) returns (Empty);
+}
+
+// plugin -> main RPC
+
+message LogRequest {
+    int32 level = 1;
+    string message = 2;
+}
+
+service LogHelper {
+    rpc Log(LogRequest) returns (Empty);
 }
