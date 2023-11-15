@@ -5,26 +5,31 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/rs/zerolog"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/tinybit/go-plugin-log-example/shared"
 )
 
-func run() error {
-	logWrapper, stderrToLogWriter := configureLogger()
+const (
+	MainProcessLogLabel = "main"
+)
 
-	zlog.Info().Msg("Started stresshouse.")
+func run() error {
+	logger := configureLogger()
+	logInjector := NewLogInjector(logger)
+	stderrToLogWriter := NewStderrToLogWriter(logger)
+	zlog.Logger = logger.With().Str("app", MainProcessLogLabel).Logger()
+
+	zlog.Info().Msg("Started main process.")
 
 	// We're a host. Start by launching the plugin process.
 	client := plugin.NewClient(&plugin.ClientConfig{
-		Logger:           logWrapper,
+		Logger:           logInjector,
 		HandshakeConfig:  shared.PluginHandshakeConfig(),
 		Plugins:          shared.PluginMapClientConfig(),
 		Cmd:              exec.Command("sh", "-c", os.Getenv("KV_PLUGIN")),
@@ -40,7 +45,7 @@ func run() error {
 	}
 
 	// Request the plugin
-	raw, err := rpcClient.Dispense("kv_grpc")
+	raw, err := rpcClient.Dispense(shared.PluginID)
 	if err != nil {
 		return err
 	}
@@ -72,10 +77,6 @@ func run() error {
 }
 
 func main() {
-	// We don't want to see the plugin logs.
-	// log.SetOutput(io.Discard)
-
-	log.SetOutput(os.Stdout)
 	if err := run(); err != nil {
 		fmt.Printf("error: %+v\n", err)
 		os.Exit(1)
@@ -84,26 +85,15 @@ func main() {
 	os.Exit(0)
 }
 
-func configureLogger() (*LoggerWrapper, *StderrToLogWriter) {
+func configureLogger() *zerolog.Logger {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 	zerolog.SetGlobalLevel(zerolog.TraceLevel)
 
 	// Setup the default logger with global context
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.StampMicro}
 	logger := zerolog.New(output).With().Timestamp().Logger()
+
 	// logger := zlog.With().Timestamp().Logger()
-	loggerShed := logger.With().Str("app", "stresshouse").Logger()
 
-	zlog.Logger = loggerShed
-
-	baseLoggerOptions := hclog.LoggerOptions{
-		Name:   "plugin",
-		Output: os.Stdout,
-		Level:  hclog.Trace,
-	}
-
-	logWrapper := NewLoggerWrapper(baseLoggerOptions, &logger)
-	stderrToLogWriter := NewStderrToLogWriter(&logger)
-
-	return logWrapper, stderrToLogWriter
+	return &logger
 }
