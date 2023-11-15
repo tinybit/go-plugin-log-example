@@ -85,11 +85,11 @@ func main() {
 }
 
 func configureLogger() (*LoggerWrapper, *StderrToLogWriter) {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.TimeFieldFormat = time.RFC3339Nano
 	zerolog.SetGlobalLevel(zerolog.TraceLevel)
 
 	// Setup the default logger with global context
-	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.StampNano}
+	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.StampMicro}
 	logger := zerolog.New(output).With().Timestamp().Logger()
 	// logger := zlog.With().Timestamp().Logger()
 	loggerShed := logger.With().Str("app", "stresshouse").Logger()
