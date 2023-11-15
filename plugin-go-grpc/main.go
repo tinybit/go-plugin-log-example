@@ -15,7 +15,7 @@ import (
 // Here is a real implementation of KV that writes to a local file with
 // the key name and the contents are the value of the key.
 type KV struct {
-	brokerID uint32
+	logClient shared.LogHelper
 }
 
 func NewKV() *KV {
@@ -23,12 +23,22 @@ func NewKV() *KV {
 }
 
 func (k *KV) Ping() error {
+	fmt.Fprintf(os.Stderr, "Plugin: got Ping() call.\n")
 	return nil
 }
 
-func (k *KV) Init(brokerID uint32) error {
+func (k *KV) Init(uint32) error {
 	fmt.Fprintf(os.Stderr, "Plugin: got Init() call.\n")
-	k.brokerID = brokerID
+
+	return nil
+}
+
+func (k *KV) SetLogger(log shared.LogHelper) error {
+	fmt.Fprintf(os.Stderr, "Plugin: got SetLogger() call.\n")
+
+	k.logClient = log
+	k.logClient.Log(0, "This is log message from Plugin!")
+
 	return nil
 }
 
@@ -43,6 +53,20 @@ func (k *KV) Get(key string) ([]byte, error) {
 	fmt.Fprintf(os.Stderr, "Plugin: got Get() call.\n")
 	return os.ReadFile("kv_" + key)
 }
+
+// func (k *KV) connectToLoggerServer() error {
+// 	conn, err := m.broker.Dial(m.brokerID)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	m.logServerConn = conn
+// 	m.logClient = &GRPCLogHelperClient{proto.NewLogHelperClient(conn)}
+
+// 	return nil
+// }
+
+//defer conn.Close()
 
 func main() {
 	serverInstance := NewKV()

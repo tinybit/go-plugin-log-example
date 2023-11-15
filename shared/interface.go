@@ -21,6 +21,7 @@ type LogHelper interface {
 type KV interface {
 	Ping() error
 	Init(brokerID uint32) error
+	SetLogger(log LogHelper) error
 	Put(key string, value []byte) error
 	Get(key string) ([]byte, error)
 }
@@ -33,7 +34,7 @@ type KVGRPCPlugin struct {
 }
 
 func (p *KVGRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	proto.RegisterKVServer(s, &GRPCServer{Impl: p.Impl})
+	proto.RegisterKVServer(s, &GRPCServer{Impl: p.Impl, broker: broker})
 	return nil
 }
 

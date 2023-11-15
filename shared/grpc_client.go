@@ -5,9 +5,11 @@ package shared
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/hashicorp/go-plugin"
+	zlog "github.com/rs/zerolog/log"
 	"github.com/tinybit/go-plugin-log-example/proto"
 	"google.golang.org/grpc"
 )
@@ -18,13 +20,11 @@ var (
 
 // GRPCClient is an implementation of KV that talks over RPC.
 type GRPCClient struct {
-	ctx              context.Context
-	broker           *plugin.GRPCBroker
-	client           proto.KVClient
-	brokerID         uint32
-	isInitialized    bool
-	logServerStarted bool
-	mutex            sync.Mutex
+	ctx           context.Context
+	broker        *plugin.GRPCBroker
+	client        proto.KVClient
+	isInitialized bool
+	mutex         sync.Mutex
 }
 
 func NewGRPCClient(ctx context.Context, broker *plugin.GRPCBroker, conn *grpc.ClientConn) *GRPCClient {
@@ -43,10 +43,10 @@ func (m *GRPCClient) Ping() error {
 }
 
 func (m *GRPCClient) Initialize() error {
-	return m.Init(m.brokerID)
+	return m.Init(0)
 }
 
-func (m *GRPCClient) Init(brokerID uint32) error {
+func (m *GRPCClient) Init(uint32) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -54,6 +54,11 @@ func (m *GRPCClient) Init(brokerID uint32) error {
 	if m.isInitialized {
 		return nil
 	}
+
+	zlog.Info().Msg("Starting logger server...")
+	brokerID := m.startLogServer(MainLogHelper)
+
+	fmt.Println("GRPCClient.Init, brokerID:", brokerID)
 
 	_, err := m.client.Init(m.ctx, &proto.InitRequest{
 		BrokerId: brokerID,
@@ -65,6 +70,10 @@ func (m *GRPCClient) Init(brokerID uint32) error {
 
 	m.isInitialized = true
 
+	return nil
+}
+
+func (m *GRPCClient) SetLogger(LogHelper) error {
 	return nil
 }
 
@@ -87,16 +96,9 @@ func (m *GRPCClient) Get(key string) ([]byte, error) {
 	return resp.Value, nil
 }
 
-func (m *GRPCClient) StartLogServer() {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
-	if m.logServerStarted {
-		return
-	}
-
+func (m *GRPCClient) startLogServer(log LogHelper) (brokerID uint32) {
 	// start logger server and remember brokerID
-	addHelperServer := &GRPCLogHelperServer{Impl: MainLogHelper}
+	addHelperServer := &GRPCLogHelperServer{Impl: log}
 
 	var s *grpc.Server
 	serverFunc := func(opts []grpc.ServerOption) *grpc.Server {
@@ -106,9 +108,8 @@ func (m *GRPCClient) StartLogServer() {
 		return s
 	}
 
-	brokerID := m.broker.NextId()
+	brokerID = m.broker.NextId()
 	go m.broker.AcceptAndServe(brokerID, serverFunc)
 
-	m.brokerID = brokerID
-	m.logServerStarted = true
+	return
 }

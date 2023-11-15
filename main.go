@@ -72,9 +72,6 @@ func run() error {
 		return err
 	}
 
-	// start logger server
-	pluginInstance.ClientPtr.StartLogServer()
-
 	// init plugin
 	err = pluginInstance.ClientPtr.Initialize()
 	if err != nil {
