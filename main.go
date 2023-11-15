@@ -25,8 +25,8 @@ func run() error {
 	// We're a host. Start by launching the plugin process.
 	client := plugin.NewClient(&plugin.ClientConfig{
 		Logger:           logWrapper,
-		HandshakeConfig:  shared.Handshake,
-		Plugins:          shared.PluginMap,
+		HandshakeConfig:  shared.PluginHandshakeConfig(),
+		Plugins:          shared.PluginMapClientConfig(),
 		Cmd:              exec.Command("sh", "-c", os.Getenv("KV_PLUGIN")),
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 		SyncStderr:       stderrToLogWriter,
