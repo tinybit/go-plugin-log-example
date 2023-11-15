@@ -16,26 +16,37 @@ import (
 )
 
 const (
-	MainProcessLogLabel = "main"
+	MainProcessLogLabel   = "main"
+	PluginProcessLogLabel = "plugin"
 )
 
-type logHelper struct {
+type LogHelper struct {
+	logger *zerolog.Logger
 }
 
-func (l *logHelper) Log(level int, msg string) error {
-	zlog.Info().Msg(msg)
+func NewLogHelper(logger *zerolog.Logger) *LogHelper {
+	lg := logger.With().Str("app", PluginProcessLogLabel).Logger()
+
+	helper := &LogHelper{
+		logger: &lg,
+	}
+
+	return helper
+}
+
+func (l *LogHelper) Log(level int, msg string) error {
+	l.logger.Info().Msg(msg)
 	return nil
 }
 
 func run() error {
 	logger := configureLogger()
+	shared.MainLogHelper = NewLogHelper(logger)
 	logInjector := NewLogInjector(logger)
 	stderrToLogWriter := NewStderrToLogWriter(logger)
 	zlog.Logger = logger.With().Str("app", MainProcessLogLabel).Logger()
 
 	zlog.Info().Msg("Started main process.")
-
-	shared.MainLogHelper = &logHelper{}
 
 	// We're a host. Start by launching the plugin process.
 	pluginInstance := &shared.KVGRPCPlugin{}

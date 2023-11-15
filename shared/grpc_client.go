@@ -5,7 +5,6 @@ package shared
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/hashicorp/go-plugin"
@@ -57,8 +56,6 @@ func (m *GRPCClient) Init(uint32) error {
 
 	zlog.Info().Msg("Starting logger server...")
 	brokerID := m.startLogServer(MainLogHelper)
-
-	fmt.Println("GRPCClient.Init, brokerID:", brokerID)
 
 	_, err := m.client.Init(m.ctx, &proto.InitRequest{
 		BrokerId: brokerID,

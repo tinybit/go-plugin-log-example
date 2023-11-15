@@ -192,7 +192,11 @@ func NewStderrToLogWriter(logger *zerolog.Logger) *StderrToLogWriter {
 
 func (s *StderrToLogWriter) Write(p []byte) (n int, err error) {
 	msg := strings.TrimSpace(string(p))
-	s.lg.Debug().Msg(msg)
+	tokens := strings.Split(msg, "\n")
+
+	for _, tok := range tokens {
+		s.lg.Trace().Msg(strings.TrimSpace(tok))
+	}
 
 	return len(p), nil
 }

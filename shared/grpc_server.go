@@ -28,7 +28,6 @@ func (m *GRPCServer) Ping(ctx context.Context, req *proto.Empty) (*proto.Empty, 
 
 func (m *GRPCServer) Init(ctx context.Context, req *proto.InitRequest) (*proto.Empty, error) {
 	m.brokerID = req.BrokerId
-	fmt.Println("GRPCServer.Init, brokerID:", m.brokerID)
 
 	err := m.connectToLoggerServer()
 	if err != nil {
@@ -58,8 +57,6 @@ func (m *GRPCServer) Get(ctx context.Context, req *proto.GetRequest) (*proto.Get
 }
 
 func (m *GRPCServer) connectToLoggerServer() error {
-	fmt.Println("GRPCServer.connectToLoggerServer, brokerID:", m.brokerID)
-
 	conn, err := m.broker.Dial(m.brokerID)
 	if err != nil {
 		return err
